@@ -1,16 +1,17 @@
-use std::{fs::{self, ReadDir}, path::PathBuf, vec};
+use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, vec};
 use std::collections::BTreeMap;
 
 use lopdf::{Bookmark, Document, Object, ObjectId};
 use clap::Parser;
 
-const RESULT_FILE_NAME: &str = "merged.pdf";
+const DEFAULT_FILE_NAME: &str = "merged.pdf";
 
 /// Merge PDF's in specified directory.
-#[derive(Parser)]
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
 struct Args {
-    /// The paths to the files
-    #[arg(short = 'p', long, default_value_t = String::from("."))]
+    /// The path to be searched
+    #[arg(default_value_t = String::from("."))]
     path: String,
 }
 
@@ -38,7 +39,7 @@ fn load_documents_from_path(path: &PathBuf) -> Vec<(Document, String)> {
             let file_name = entry.file_name();
             let file_name = file_name.to_str().unwrap_or("");
 
-            if file_name.ends_with(".pdf") && file_name != RESULT_FILE_NAME {
+            if file_name.ends_with(".pdf") && file_name != DEFAULT_FILE_NAME {
                 let doc = Document::load(file_path);
                 if doc.is_err() {
                     continue;
@@ -225,19 +226,29 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
     return Ok(document);
 }
 
-// TODO: Sort docs after file_name
+
 // TODO: add output filename specification (maybe)
 
 fn main() {
     let args = Args::parse();
-    let path = PathBuf::from(args.path);
-    println!("(DEBUG) PATH: >{:?}<", path);
-    let docs: Vec<(Document, String)> = load_documents_from_path(&path);
-    println!("(DEBUG) docs: >{:?}<", docs.len());
+    let mut path = PathBuf::from(args.path);
+    println!("PATH:\n    {:?}", path);
+    let mut docs: Vec<(Document, String)> = load_documents_from_path(&path);
+    docs.sort_by(|(_, a), (_, b)| a.cmp(b));
+    println!("ORDER:");
+    for (doc, name) in &docs {
+        println!("    Title: {}, Pages: {}", name, doc.get_pages().len());
+    }
+    path.push(DEFAULT_FILE_NAME);
 
+    let merged_file_path = Path::new(&path);
     let merged_doc = merge(docs);
     match merged_doc {
-        Ok(mut merged_doc) => { merged_doc.save(RESULT_FILE_NAME).unwrap(); },
+        Ok(mut merged_doc) => { 
+            merged_doc.save(merged_file_path).unwrap(); 
+            println!("MERGED:");
+            println!("    Title: {}, Pages: {}", DEFAULT_FILE_NAME, merged_doc.get_pages().len());
+        },
         Err(error_message) => println!("{}", error_message),
     }
 }
