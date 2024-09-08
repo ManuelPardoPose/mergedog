@@ -234,6 +234,10 @@ fn main() {
     let mut path = PathBuf::from(args.path);
     println!("PATH:\n    {:?}", path);
     let mut docs: Vec<(Document, String)> = load_documents_from_path(&path);
+    if docs.len() == 0 {
+        println!("NO PDF'S FOUND");
+        return;
+    }
     docs.sort_by(|(_, a), (_, b)| a.cmp(b));
     println!("ORDER:");
     for (doc, name) in &docs {
