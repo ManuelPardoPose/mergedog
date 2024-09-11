@@ -235,8 +235,6 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
     return Ok(document);
 }
 
-// TODO: add output filename specification (maybe)
-
 fn main() {
     let args = Args::parse();
     let inpath = PathBuf::from(args.inpath);
