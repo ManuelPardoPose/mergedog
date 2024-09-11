@@ -16,7 +16,11 @@ const DEFAULT_FILE_NAME: &str = "merged.pdf";
 struct Args {
     /// The path to be searched
     #[arg(default_value_t = String::from("."))]
-    path: String,
+    inpath: String,
+
+    /// The path of the output file
+    #[arg(default_value_t = String::from(DEFAULT_FILE_NAME))]
+    outpath: String,
 }
 
 fn load_documents_from_path(path: &PathBuf) -> Vec<(Document, String)> {
@@ -235,9 +239,10 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
 
 fn main() {
     let args = Args::parse();
-    let mut path = PathBuf::from(args.path);
-    println!("PATH:\n    {:?}", path);
-    let mut docs: Vec<(Document, String)> = load_documents_from_path(&path);
+    let inpath = PathBuf::from(args.inpath);
+    let outpath = PathBuf::from(args.outpath);
+    println!("PATH:\n    {:?}", inpath);
+    let mut docs: Vec<(Document, String)> = load_documents_from_path(&inpath);
     if docs.len() == 0 {
         println!("NO PDF'S FOUND");
         return;
@@ -247,9 +252,8 @@ fn main() {
     for (doc, name) in &docs {
         println!("    Title: {}, Pages: {}", name, doc.get_pages().len());
     }
-    path.push(DEFAULT_FILE_NAME);
 
-    let merged_file_path = Path::new(&path);
+    let merged_file_path = Path::new(&outpath);
     let merged_doc = merge(docs);
     match merged_doc {
         Ok(mut merged_doc) => {
@@ -257,7 +261,7 @@ fn main() {
             println!("MERGED:");
             println!(
                 "    Title: {}, Pages: {}",
-                DEFAULT_FILE_NAME,
+                outpath.to_str().unwrap(),
                 merged_doc.get_pages().len()
             );
         }
