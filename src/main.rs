@@ -1,8 +1,12 @@
-use std::{fs::{self, ReadDir}, path::{Path, PathBuf}, vec};
 use std::collections::BTreeMap;
+use std::{
+    fs::{self, ReadDir},
+    path::{Path, PathBuf},
+    vec,
+};
 
-use lopdf::{Bookmark, Document, Object, ObjectId};
 use clap::Parser;
+use lopdf::{Bookmark, Document, Object, ObjectId};
 
 const DEFAULT_FILE_NAME: &str = "merged.pdf";
 
@@ -33,7 +37,7 @@ fn load_documents_from_path(path: &PathBuf) -> Vec<(Document, String)> {
             continue;
         }
         let filetype = filetype.unwrap();
-        
+
         if filetype.is_file() {
             let file_path = entry.path();
             let file_name = entry.file_name();
@@ -73,21 +77,22 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
         max_id = doc.max_id + 1;
 
         documents_pages.extend(
-            doc
-                .get_pages()
+            doc.get_pages()
                 .into_iter()
                 .map(|(_, object_id)| {
                     if !first {
-                        let bookmark = Bookmark::new(String::from(format!("Page_{}", pagenum)), [0.0, 0.0, 1.0], 0, object_id);
+                        let bookmark = Bookmark::new(
+                            String::from(format!("Page_{}", pagenum)),
+                            [0.0, 0.0, 1.0],
+                            0,
+                            object_id,
+                        );
                         document.add_bookmark(bookmark, None);
                         first = true;
                         pagenum += 1;
                     }
 
-                    (
-                        object_id,
-                        doc.get_object(object_id).unwrap().to_owned(),
-                    )
+                    (object_id, doc.get_object(object_id).unwrap().to_owned())
                 })
                 .collect::<BTreeMap<ObjectId, Object>>(),
         );
@@ -226,7 +231,6 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
     return Ok(document);
 }
 
-
 // TODO: add output filename specification (maybe)
 
 fn main() {
@@ -248,11 +252,15 @@ fn main() {
     let merged_file_path = Path::new(&path);
     let merged_doc = merge(docs);
     match merged_doc {
-        Ok(mut merged_doc) => { 
-            merged_doc.save(merged_file_path).unwrap(); 
+        Ok(mut merged_doc) => {
+            merged_doc.save(merged_file_path).unwrap();
             println!("MERGED:");
-            println!("    Title: {}, Pages: {}", DEFAULT_FILE_NAME, merged_doc.get_pages().len());
-        },
+            println!(
+                "    Title: {}, Pages: {}",
+                DEFAULT_FILE_NAME,
+                merged_doc.get_pages().len()
+            );
+        }
         Err(error_message) => println!("{}", error_message),
     }
 }
