@@ -21,3 +21,6 @@ Options:
   -h, --help     Print help
   -V, --version  Print version
 ```
+
+## Install
+`cargo install --git https://github.com/ManuelPardoPose/cli-doc-merger.git`
