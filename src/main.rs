@@ -239,14 +239,14 @@ fn main() {
     let args = Args::parse();
     let inpath = PathBuf::from(args.inpath);
     let outpath = PathBuf::from(args.outpath);
-    println!("PATH:\n    {:?}", inpath);
+    println!("Path:\n    {:?}", inpath);
     let mut docs: Vec<(Document, String)> = load_documents_from_path(&inpath);
     if docs.len() == 0 {
-        println!("NO PDF'S FOUND");
+        println!("No PDFs found");
         return;
     }
     docs.sort_by(|(_, a), (_, b)| a.cmp(b));
-    println!("ORDER:");
+    println!("Order:");
     for (doc, name) in &docs {
         println!("    Title: {}, Pages: {}", name, doc.get_pages().len());
     }
@@ -256,9 +256,9 @@ fn main() {
     match merged_doc {
         Ok(mut merged_doc) => {
             merged_doc.save(merged_file_path).unwrap();
-            println!("MERGED:");
+            println!("Merged:");
             println!(
-                "    Title: {}, Pages: {}",
+                "    Path: {}, Pages: {}",
                 outpath.to_str().unwrap(),
                 merged_doc.get_pages().len()
             );
