@@ -21,6 +21,10 @@ struct Args {
     /// The path of the output file
     #[arg(default_value_t = String::from(DEFAULT_FILE_NAME))]
     outpath: String,
+
+    /// Annotate file names to corner of first slides
+    #[arg(default_value_t = false, short, long)]
+    anno: bool,
 }
 
 fn load_documents_from_path(path: &PathBuf) -> Vec<(Document, String)> {

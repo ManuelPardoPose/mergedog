@@ -25,4 +25,4 @@ Cargo.lock
 /target
 
 # pdfs that might me created while running
-.pdf
+*.pdf
