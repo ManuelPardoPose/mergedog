@@ -25,6 +25,10 @@ struct Args {
     /// Annotate file names to corner of first slides
     #[arg(default_value_t = false, short, long)]
     anno: bool,
+
+    /// Quiet
+    #[arg(default_value_t = false, short, long)]
+    quiet: bool,
 }
 
 fn load_documents_from_path(path: &PathBuf) -> Vec<(Document, String)> {
@@ -243,16 +247,25 @@ fn main() {
     let args = Args::parse();
     let inpath = PathBuf::from(args.inpath);
     let outpath = PathBuf::from(args.outpath);
-    println!("Path:\n    {:?}", inpath);
+    let verbose: bool = !args.quiet;
+    if verbose {
+        println!("Path:\n    {:?}", inpath)
+    }
     let mut docs: Vec<(Document, String)> = load_documents_from_path(&inpath);
     if docs.len() == 0 {
-        println!("No PDFs found");
+        if verbose {
+            println!("No PDFs found");
+        }
         return;
     }
     docs.sort_by(|(_, a), (_, b)| a.cmp(b));
-    println!("Order:");
+    if verbose {
+        println!("Order:");
+    }
     for (doc, name) in &docs {
-        println!("    Title: {}, Pages: {}", name, doc.get_pages().len());
+        if verbose {
+            println!("    Title: {}, Pages: {}", name, doc.get_pages().len());
+        }
     }
 
     let merged_file_path = Path::new(&outpath);
@@ -260,13 +273,19 @@ fn main() {
     match merged_doc {
         Ok(mut merged_doc) => {
             merged_doc.save(merged_file_path).unwrap();
-            println!("Merged:");
-            println!(
-                "    Path: {}, Pages: {}",
-                outpath.to_str().unwrap(),
-                merged_doc.get_pages().len()
-            );
+            if verbose {
+                println!("Merged:");
+                println!(
+                    "    Path: {}, Pages: {}",
+                    outpath.to_str().unwrap(),
+                    merged_doc.get_pages().len()
+                );
+            }
         }
-        Err(error_message) => println!("{}", error_message),
+        Err(error_message) => {
+            if verbose {
+                println!("{}", error_message);
+            }
+        }
     }
 }
