@@ -1,4 +1,4 @@
-# cli-doc-merger
+# mergedog - *the doc merger*
 
 ## Does the following
 - Iterate through specified directory recursively
@@ -7,11 +7,11 @@
 - Merge them
 - Save to `merged.pdf`
 
-## `cli-doc-merger -h`
+## `mergedog -h`
 ```
 Merge PDF's in specified directory
 
-Usage: cli-doc-merger [OPTIONS] [INPATH] [OUTPATH]
+Usage: mergedog [OPTIONS] [INPATH] [OUTPATH]
 
 Arguments:
   [INPATH]   The path to be searched [default: .]
@@ -25,4 +25,4 @@ Options:
 ```
 
 ## Install
-`cargo install --git https://github.com/ManuelPardoPose/cli-doc-merger.git`
+`cargo install --git https://github.com/ManuelPardoPose/mergedog.git`
