@@ -6,7 +6,7 @@ use std::{
 };
 
 use clap::Parser;
-use lopdf::{Bookmark, Document, Object, ObjectId};
+use lopdf::{content::Operation, Bookmark, Document, Object, ObjectId};
 
 const DEFAULT_FILE_NAME: &str = "merged.pdf";
 
@@ -73,7 +73,7 @@ fn load_documents_from_path(path: &PathBuf) -> Vec<(Document, String)> {
 }
 
 // code in merge stolen from library examples heheheha
-fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static str> {
+fn merge(docs_with_names: Vec<(Document, String)>) -> Result<(Document, Vec<u32>), &'static str> {
     // Define a starting `max_id` (will be used as start index for object_ids).
     let mut max_id = 1;
     let mut pagenum = 1;
@@ -81,6 +81,9 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
     let mut documents_pages = BTreeMap::new();
     let mut documents_objects = BTreeMap::new();
     let mut document = Document::with_version("1.5");
+
+    let mut first_pages: Vec<u32> = vec![];
+    let mut total_page_counter = 0;
 
     for (mut doc, _) in docs_with_names {
         let mut first = false;
@@ -92,6 +95,7 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
             doc.get_pages()
                 .into_iter()
                 .map(|(_, object_id)| {
+                    total_page_counter += 1;
                     if !first {
                         let bookmark = Bookmark::new(
                             String::from(format!("Page_{}", pagenum)),
@@ -101,6 +105,7 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
                         );
                         document.add_bookmark(bookmark, None);
                         first = true;
+                        first_pages.push(total_page_counter);
                         pagenum += 1;
                     }
 
@@ -240,7 +245,37 @@ fn merge(docs_with_names: Vec<(Document, String)>) -> Result<Document, &'static 
 
     document.compress();
 
-    return Ok(document);
+    return Ok((document, first_pages));
+}
+
+fn add_first_page_annotations(doc: &mut (Document, Vec<u32>), file_names: Vec<String>) {
+    for i in 0..doc.1.len() {
+        let text = file_names[i].clone();
+        let pages = doc.0.get_pages();
+        let page_id = *pages.get(&doc.1[i]).unwrap_or(&(0, 0));
+        let font_size = 30.0;
+        let mut page_content = doc.0.get_and_decode_page_content(page_id).unwrap();
+        let (x, y) = (10.0, 10.0);
+        let operations = vec![
+            // begin text object
+            Operation::new("BT", vec![]),
+            // set color
+            Operation::new("0 0 0 rg", vec![]),
+            // text font F1
+            Operation::new("Tf", vec!["F1".into(), font_size.into()]),
+            // text positioning
+            Operation::new("Td", vec![x.into(), y.into()]),
+            // text showing
+            Operation::new("Tj", vec![Object::string_literal(text)]),
+            // end text object
+            Operation::new("ET", vec![]),
+        ];
+        for op in operations {
+            page_content.operations.push(op)
+        }
+        let encoded = page_content.encode().unwrap();
+        doc.0.change_page_content(page_id, encoded).unwrap();
+    }
 }
 
 fn main() {
@@ -262,30 +297,26 @@ fn main() {
     if verbose {
         println!("Order:");
     }
+    let mut file_names: Vec<String> = vec![];
     for (doc, name) in &docs {
         if verbose {
             println!("    Title: {}, Pages: {}", name, doc.get_pages().len());
         }
+        file_names.push(name.to_string());
     }
 
     let merged_file_path = Path::new(&outpath);
-    let merged_doc = merge(docs);
-    match merged_doc {
-        Ok(mut merged_doc) => {
-            merged_doc.save(merged_file_path).unwrap();
-            if verbose {
-                println!("Merged:");
-                println!(
-                    "    Path: {}, Pages: {}",
-                    outpath.to_str().unwrap(),
-                    merged_doc.get_pages().len()
-                );
-            }
-        }
-        Err(error_message) => {
-            if verbose {
-                println!("{}", error_message);
-            }
-        }
+    let mut merged_doc = merge(docs).unwrap();
+    if args.anno {
+        add_first_page_annotations(&mut merged_doc, file_names);
+    }
+    merged_doc.0.save(merged_file_path).unwrap();
+    if verbose {
+        println!("Merged:");
+        println!(
+            "    Path: {}, Pages: {}",
+            outpath.to_str().unwrap(),
+            merged_doc.0.get_pages().len()
+        );
     }
 }
